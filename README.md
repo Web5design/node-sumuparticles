@@ -1,4 +1,4 @@
-# node-summary
+# node-sumuparticles
 Node module summarizing web-articles using a naive algorithm, based off [node-summary](https://github.com/jbrooksuk/node-summary/).
 
 # Algorithm
