@@ -4,6 +4,12 @@ Node module summarizing web-articles using a naive algorithm, based off [node-su
 # Algorithm
 The algorithm used is explained [here](http://thetokenizer.com/2013/04/28/build-your-own-summary-tool/). I improved it.
 
+# Install
+
+```
+npm install node-sumuparticles
+```
+
 # Usage
     
 ```javascript
