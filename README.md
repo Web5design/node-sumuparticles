@@ -1,16 +1,20 @@
 # node-sumuparticles
 Node module summarizing web-articles using a naive algorithm, based off [node-summary](https://github.com/jbrooksuk/node-summary/).
 
-# Algorithm
+## Algorithm
 The algorithm used is explained [here](http://thetokenizer.com/2013/04/28/build-your-own-summary-tool/). I improved it.
 
-# Install
+## Demo
+
+[summary.elefeed.us](https://summary.elefeed.us/)
+
+## Install
 
 ```
 npm install node-sumuparticles
 ```
 
-# Usage
+## Usage
     
 ```javascript
 var summary = require('node-sumuparticles');
@@ -24,7 +28,7 @@ summary.summarize(url, function(title, summary, failure) {
 });
 ```
 
-# License
+## License
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
