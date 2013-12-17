@@ -6,7 +6,7 @@ The algorithm used is explained [here](http://thetokenizer.com/2013/04/28/build-
 
 ## Demo
 
-[summary.elefeed.us](https://summary.elefeed.us/)
+[elefeed.us/summary](https://elefeed.us/summary)
 
 ## Install
 
