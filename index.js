@@ -30,14 +30,24 @@ function arrayContainsObject(arr, o) {
 }
 
 function splitContentToSentences(content) {
-	var replace = [];
-	var p = new RegExp('((?:(?:[0-2]?\\d{1})|(?:[3][01]{1})))(?![\\d])(\\.)(\\s+)((?:[a-z][a-z]+))(\\s+)((?:(?:[1]{1}\\d{1}\\d{1}\\d{1})|(?:[2]{1}\\d{3})))(?![\\d])',["i"]);
-	var t = p.exec(content);
-	var i = 1;
+	var replace = [],
+		p = new RegExp('((?:(?:[0-2]?\\d{1})|(?:[3][01]{1})))(?![\\d])(\\.)(\\s+)((?:[a-z][a-z]+))(\\s+)((?:(?:[1]{1}\\d{1}\\d{1}\\d{1})|(?:[2]{1}\\d{3})))(?![\\d])',["i"]),
+		p2 = new RegExp('((?:(?:[0-2]?\\d{1})|(?:[3][01]{1})))(?![\\d])(\\.)(\\s+)((?:Jan(?:uary)?|Feb(?:ruary)?|Feb(?:ruar)?|Mar(?:ch)?|Mär(?:z)?|Apr(?:il)?|May|Mai|Jun(?:e)?|Jun(?:i)?|Jul(?:y)?|Jul(?:i)?|Aug(?:ust)?|Sep(?:tember)?|Sept|Oct(?:ober)?|Okt(?:ober)?|Nov(?:ember)?|Dez(?:ember)?|Dec(?:ember)?))',["i"]),
+		t = p.exec(content),
+		i = 1;
+
 	while(t != null) {
 		replace.push([ '%s' + i, t[0] ]);
 		content = content.replace(t[0], '%s' + i);
 		t = p.exec(content);
+		i++;
+	}
+
+	t = p2.exec(content);
+	while(t != null) {
+		replace.push([ '%s' + i, t[0] ]);
+		content = content.replace(t[0], '%s' + i);
+		t = p2.exec(content);
 		i++;
 	}
 
