@@ -30,11 +30,25 @@ function arrayContainsObject(arr, o) {
 }
 
 function splitContentToSentences(content) {
+	var replace = [];
+	var p = new RegExp('((?:(?:[0-2]?\\d{1})|(?:[3][01]{1})))(?![\\d])(\\.)(\\s+)((?:[a-z][a-z]+))(\\s+)((?:(?:[1]{1}\\d{1}\\d{1}\\d{1})|(?:[2]{1}\\d{3})))(?![\\d])',["i"]);
+	var t = p.exec(content);
+	var i = 1;
+	while(t != null) {
+		replace.push([ '%s' + i, t[0] ]);
+		content = content.replace(t[0], '%s' + i);
+		t = p.exec(content);
+		i++;
+	}
+
 	var arr = [];
 	content = content.replace("\n", ". ");
 	
 	var temp = content.match(/(.+?\.(?:\s|$))/g);
 	_.each(temp, function(s) {
+		_.each(replace, function(r) {
+			s = s.replace(r[0], r[1]);
+		});
 		arr.push(s);
 	});
 	return arr;
@@ -175,7 +189,7 @@ exports.summarize = function(url, callback) {
 			
 			for(i = 0; i < paragraphs.length; i++) {
 				var arr = splitContentToSentences(paragraphs[i]);
-				if (arr.length > 2) {
+				if (arr.length > 1) {
 					_.each(arr, function(s) {
 						sentences.push(s);
 						sentencesIndex.push(i);
@@ -235,9 +249,7 @@ exports.summarize = function(url, callback) {
 
 			_.each(selSentences, function(arr) {
 				_.each(arr, function(s) {
-					s = s.replace("...", ".");
-					s = s.replace("..", ".");
-					s = s.replace("  ", " ");
+					s = s.replace("...", ".").replace("..", ".").replace("  ", " ");
 					summary += s.trim() + ' ';
 				});
 				summary = summary.trim() + '\n';
