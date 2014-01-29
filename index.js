@@ -159,166 +159,177 @@ function getSentencesRank(sentences) {
 	return sentences_dict;
 }
 
-exports.summarize = function(url, callback) {
-	request({ uri: url }, function(error, response, body) {
+function main(ch, callback) {
+	var $ = ch,
+		summary = "",
+		title = "",
+		failure = false,
+		cand = [],
+		totalWords = 0,
+		paragraphs = [],
+		sentences = [],
+		sentencesIndex = [],
+		dict = [],
+		selSentences = [],
+		selSentencesWords = 0,
+		ignore = [],
+		dict_p_arr = [],
+		dict_p_arr_balance = [],
+		strip_s = "",
+		i = 0;
+	
+	cand = $('p').toArray();
+	_.each(cand, function(ele) {
+		if ($(ele).find('div').length === 0 && $(ele).find('img').length === 0 && $(ele).find('script').length === 0 && $(ele).find('ul').length === 0) {
+			
+			var text = _($(ele).text()).stripTags().trim(),
+				sent_count = countSentences(text),
+				wp_ratio = calculateWPRatio(text);
+				totalWords += countWords(text);
+			
+			if (percentageLetter(text) > 0.5 && sent_count > 0 && wp_ratio > 60) {
+				paragraphs.push(text);
+			}
+		}
+	});
+	
+	for(i = 0; i < paragraphs.length; i++) {
+		var arr = splitContentToSentences(paragraphs[i]);
+		if (arr.length > 1) {
+			_.each(arr, function(s) {
+				sentences.push(s);
+				sentencesIndex.push(i);
+			});
+		}
+	}
+	
+	_.each(paragraphs, function(p) {
+		selSentences.push([]);
+		dict_p_arr.push([]);
+	});
+	
+	dict = getSentencesRank(sentences);
+	
+	for(i = 0; i < paragraphs.length; i++) {
+		var p = paragraphs[i],
+			arr = splitContentToSentences(p),
+			max_score = 0,
+			best_s = "",
+			best_s_index = 0,
+			dict_p = getSentencesRank(arr);
+		dict_p_arr[i] = dict_p;
+		dict_p_arr_balance[i] = sentences.length / arr.length;
+		_.each(arr, function(s) {
+			strip_s = formatSentence(s);
+			if (s && dict_p[strip_s] > max_score && !arrayContainsObject(ignore, s)) {
+				max_score = dict_p[strip_s];
+				best_s = s;
+			}
+		});
 		
-		var summary = "",
-			title = "",
-			failure = false;
-		
-		if (body && !error) {
-			var $ = cheerio.load(body),
-				cand = [],
-				totalWords = 0,
-				paragraphs = [],
-				sentences = [],
-				sentencesIndex = [],
-				dict = [],
-				selSentences = [],
-				selSentencesWords = 0,
-				ignore = [],
-				dict_p_arr = [],
-				dict_p_arr_balance = [],
-				strip_s = "",
-				i = 0;
-			
-			cand = $('p').toArray();
-			_.each(cand, function(ele) {
-				if ($(ele).find('div').length === 0 && $(ele).find('img').length === 0 && $(ele).find('script').length === 0 && $(ele).find('ul').length === 0) {
-					
-					var text = _($(ele).text()).stripTags().trim(),
-						sent_count = countSentences(text),
-						wp_ratio = calculateWPRatio(text);
-						totalWords += countWords(text);
-					
-					if (percentageLetter(text) > 0.5 && sent_count > 0 && wp_ratio > 60) {
-						paragraphs.push(text);
-					}
-				}
-			});
-			
-			for(i = 0; i < paragraphs.length; i++) {
-				var arr = splitContentToSentences(paragraphs[i]);
-				if (arr.length > 1) {
-					_.each(arr, function(s) {
-						sentences.push(s);
-						sentencesIndex.push(i);
-					});
-				}
-			}
-			
-			_.each(paragraphs, function(p) {
-				selSentences.push([]);
-				dict_p_arr.push([]);
-			});
-			
-			dict = getSentencesRank(sentences);
-			
-			for(i = 0; i < paragraphs.length; i++) {
-				var p = paragraphs[i],
-					arr = splitContentToSentences(p),
-					max_score = 0,
-					best_s = "",
-					best_s_index = 0,
-					dict_p = getSentencesRank(arr);
-				dict_p_arr[i] = dict_p;
-				dict_p_arr_balance[i] = sentences.length / arr.length;
-				_.each(arr, function(s) {
-					strip_s = formatSentence(s);
-					if (s && dict_p[strip_s] > max_score && !arrayContainsObject(ignore, s)) {
-						max_score = dict_p[strip_s];
-						best_s = s;
-					}
-				});
-				
-				selSentences[i].push(best_s);
-				selSentencesWords += countWords(best_s);
-				ignore.push(best_s);
-			}
+		selSentences[i].push(best_s);
+		selSentencesWords += countWords(best_s);
+		ignore.push(best_s);
+	}
 
-			while(selSentencesWords < totalWords * 0.2) {
-				var max_score = 0,
-					best_s = "",
-					best_s_index = 0;
-				for(i = 0; i < sentences.length; i++) {
-					strip_s = formatSentence(sentences[i]);
-					if (sentences[i] && dict[strip_s] > max_score && !arrayContainsObject(ignore, sentences[i]) && (dict_p_arr[sentencesIndex[i]][strip_s] * dict_p_arr_balance[sentencesIndex[i]]) < (dict[strip_s])) {
-						max_score = dict[strip_s];
-						best_s = sentences[i];
-						best_s_index = sentencesIndex[i];
-					}
-				}
-				if (max_score == 0) {
-					break;
-				}
-				
-				selSentences[best_s_index].push(best_s);
-				selSentencesWords += countWords(best_s);
-				ignore.push(best_s);
+	while(selSentencesWords < totalWords * 0.2) {
+		var max_score = 0,
+			best_s = "",
+			best_s_index = 0;
+		for(i = 0; i < sentences.length; i++) {
+			strip_s = formatSentence(sentences[i]);
+			if (sentences[i] && dict[strip_s] > max_score && !arrayContainsObject(ignore, sentences[i]) && (dict_p_arr[sentencesIndex[i]][strip_s] * dict_p_arr_balance[sentencesIndex[i]]) < (dict[strip_s])) {
+				max_score = dict[strip_s];
+				best_s = sentences[i];
+				best_s_index = sentencesIndex[i];
 			}
-
-			_.each(selSentences, function(arr) {
-				_.each(arr, function(s) {
-					s = s.replace("...", ".").replace("..", ".").replace("  ", " ");
-					summary += s.trim() + ' ';
-				});
-				summary = summary.trim() + '\n';
-			});
-			
-			title = _($('h1[itemprop="name"]').text()).stripTags().trim();
-			if (_(title).isBlank()) {
-				var items = [];
-				items = $('h1').toArray();
-				items = items.concat($('h2').toArray());
-				var highestScore = 0;
-				var highestItem = '';
-				_.each(items, function(ele) {
-					if ($(ele).find('div').length === 0 && $(ele).find('img').length === 0 && $(ele).find('script').length === 0 && $(ele).find('ul').length === 0) {
-						var text = _($(ele).text()).stripTags().trim();
-						if (percentageLetter(text) > 0.5) {
-							var score = 0;
-							_.each(selSentences, function(s) {
-								score += intersectSentences(text, s);
-							});
-							if (score > highestScore) {
-								highestScore = score;
-								highestItem = text;
-							}
-						}
-					}
-				});
-				if (highestItem == '') {
-					title = $('meta[name="title"]').attr('content');
-					if (_(title).isBlank()) {
-						title = $('title').text();
-					}
-					var title_comp = [];
-					title_comp = title.split(/ -|–|:|\| /);
-					title_comp = _.map(title_comp, function(title) {
-						return _(title).trim();
-					});
-					var longest_streak = 0;
-					_.each(title_comp, function(e) {
-						var words = countWords(e);
-						if (words > longest_streak) {
-							longest_streak = words;
-							title = e;
-						}
-					});
-				} else {
-					title = highestItem;
-				}
-			}
-			
-			if (title === "404 Not Found") {
-				failure = true;
-			}
-			
-		} else {
-			title = "Parsing Page Failed";
-			failure = true;
+		}
+		if (max_score == 0) {
+			break;
 		}
 		
-		callback(_.clean(title.replace(/\n/g, '')), summary.trim(), failure);
+		selSentences[best_s_index].push(best_s);
+		selSentencesWords += countWords(best_s);
+		ignore.push(best_s);
+	}
+
+	_.each(selSentences, function(arr) {
+		_.each(arr, function(s) {
+			s = s.replace("...", ".").replace("..", ".").replace("  ", " ");
+			summary += s.trim() + ' ';
+		});
+		summary = summary.trim() + '\n';
 	});
+	
+	title = _($('h1[itemprop="name"]').text()).stripTags().trim();
+	if (_(title).isBlank()) {
+		var items = [];
+		items = $('h1').toArray();
+		items = items.concat($('h2').toArray());
+		var highestScore = 0;
+		var highestItem = '';
+		_.each(items, function(ele) {
+			if ($(ele).find('div').length === 0 && $(ele).find('img').length === 0 && $(ele).find('script').length === 0 && $(ele).find('ul').length === 0) {
+				var text = _($(ele).text()).stripTags().trim();
+				if (percentageLetter(text) > 0.5) {
+					var score = 0;
+					_.each(selSentences, function(s) {
+						score += intersectSentences(text, s);
+					});
+					if (score > highestScore) {
+						highestScore = score;
+						highestItem = text;
+					}
+				}
+			}
+		});
+		if (highestItem == '') {
+			title = $('meta[name="title"]').attr('content');
+			if (_(title).isBlank()) {
+				title = $('title').text();
+			}
+			var title_comp = [];
+			title_comp = title.split(/ -|–|:|\| /);
+			title_comp = _.map(title_comp, function(title) {
+				return _(title).trim();
+			});
+			var longest_streak = 0;
+			_.each(title_comp, function(e) {
+				var words = countWords(e);
+				if (words > longest_streak) {
+					longest_streak = words;
+					title = e;
+				}
+			});
+		} else {
+			title = highestItem;
+		}
+	}
+	
+	if (title === "404 Not Found") {
+		failure = true;
+	}
+
+	callback(_.clean(title.replace(/\n/g, '')), summary.trim(), failure);
+}
+
+exports.summarize = function(input, callback) {
+	if (typeof input === 'string') {
+		request({ uri: input }, function(error, response, body) {
+			if (body && !error) {
+				var ch = cheerio.load(body);
+				main(ch, function(title, summary, failure) {
+					callback(title, summary, failure);
+				});
+			} else {
+				callback('Failure while parsing', '', true);
+			}
+		});
+	} else if (typeof input === 'object') {
+		main(input, function(title, summary, failure) {
+			callback(title, summary, failure);
+		});
+	} else {
+		callback('False input data', '', true);
+	}
 }
